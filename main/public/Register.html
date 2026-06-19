@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+
+  <h1>Create Account</h1>
+
+  <p class="subtitle">
+    Join EduStream. A verification OTP will be sent to your email.
+  </p>
+
+  <input type="text"     id="name"     placeholder="Full Name">
+  <input type="email"    id="email"    placeholder="Email Address">
+  <input type="password" id="password" placeholder="Password (min 6 chars)">
+
+  <select id="role">
+    <option value="student">Student</option>
+    <option value="professor">Professor</option>
+  </select>
+
+  <button onclick="register()">Create Account</button>
+
+  <p style="text-align:center;margin-top:16px;font-size:13px;color:rgba(255,255,255,0.4)">
+    Already have an account?
+    <a href="index.html" style="color:#4ecdc4;font-weight:600">Log in</a>
+  </p>
+
+</div>
+
+<script>
+
+async function register() {
+
+  const name     = document.getElementById('name').value.trim();
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const role     = document.getElementById('role').value;
+
+  if (!name || !email || !password) {
+    return alert('Please fill all fields.');
+  }
+
+  if (password.length < 6) {
+    return alert('Password must be at least 6 characters.');
+  }
+
+  const response = await fetch('/api/register', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ name, email, password, role }),
+  });
+
+  const data = await response.json();
+
+  if (data.success) {
+    alert('📧 ' + data.message);
+    window.location.href = `verify.html?email=${encodeURIComponent(email)}`;
+  } else {
+    alert('❌ ' + data.message);
+  }
+}
+
+</script>
+
+</body>
+</html>

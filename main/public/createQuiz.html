@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c14;
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --border-focus: rgba(139,92,246,0.6);
+    --accent: #7c3aed;
+    --accent2: #a78bfa;
+    --accent-ai: #06b6d4;
+    --accent-ai2: #67e8f9;
+    --text: #f1f5f9;
+    --text-muted: rgba(241,245,249,0.45);
+    --text-dim: rgba(241,245,249,0.25);
+    --danger: #f87171;
+    --success: #34d399;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 10%, rgba(124,58,237,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 80% 80%, rgba(6,182,212,0.08) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 60% at 50% 50%, rgba(139,92,246,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* Header */
+  .page-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 18px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .back-btn:hover { background: var(--surface-hover); color: var(--text); }
+
+  .header-text h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #f1f5f9 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-text p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 3px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 300;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: rgba(255,255,255,0.12); }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  /* Config row */
+  .config-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  input, textarea, select {
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+  }
+  input::placeholder, textarea::placeholder { color: var(--text-dim); }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--border-focus);
+    background: rgba(139,92,246,0.06);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
+  }
+  input[readonly] {
+    color: var(--text-muted);
+    cursor: default;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+  }
+  textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+
+  /* AI Section */
+  .ai-section {
+    background: linear-gradient(135deg, rgba(6,182,212,0.06) 0%, rgba(124,58,237,0.06) 100%);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ai-section::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .ai-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(6,182,212,0.12);
+    border: 1px solid rgba(6,182,212,0.25);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--accent-ai2);
+  }
+
+  .ai-badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent-ai);
+    box-shadow: 0 0 6px var(--accent-ai);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%,100% { opacity:1; transform: scale(1); }
+    50% { opacity:0.5; transform: scale(0.8); }
+  }
+
+  .ai-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .btn-ai {
+    background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(124,58,237,0.2));
+    border: 1px solid rgba(6,182,212,0.35);
+    color: var(--accent-ai2);
+    width: 100%;
+    margin-top: 14px;
+    font-size: 15px;
+    padding: 14px;
+  }
+  .btn-ai:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(6,182,212,0.3), rgba(124,58,237,0.3));
+    border-color: rgba(6,182,212,0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(6,182,212,0.15);
+  }
+  .btn-ai:disabled { opacity:0.5; cursor:not-allowed; }
+
+  .btn-ghost {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    flex: 1;
+  }
+  .btn-ghost:hover { background: var(--surface-hover); color: var(--text); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #9333ea);
+    border: 1px solid rgba(139,92,246,0.4);
+    color: white;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.25);
+    flex: 2;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(124,58,237,0.4);
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 28px;
+  }
+
+  /* Question card */
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    animation: slide-in 0.3s ease;
+    position: relative;
+  }
+
+  @keyframes slide-in {
+    from { opacity:0; transform: translateY(-8px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .question-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .q-number {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent2);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .q-delete {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    width: auto;
+  }
+  .q-delete:hover { background: rgba(248,113,113,0.12); color: var(--danger); }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 10px 0;
+  }
+
+  .correct-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .correct-row label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--success);
+    white-space: nowrap;
+  }
+  .correct-row input { border-color: rgba(52,211,153,0.25); }
+  .correct-row input:focus { border-color: rgba(52,211,153,0.6); box-shadow: 0 0 0 3px rgba(52,211,153,0.08); }
+
+  /* Questions header */
+  .questions-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    margin-top: 28px;
+  }
+
+  .questions-count {
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  /* Loading shimmer */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .generating-indicator {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    background: rgba(6,182,212,0.06);
+    border: 1px solid rgba(6,182,212,0.15);
+    border-radius: var(--radius-sm);
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--accent-ai2);
+  }
+  .generating-indicator.active { display: flex; }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(6,182,212,0.2);
+    border-top-color: var(--accent-ai);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 24px 0;
+    color: var(--text-dim);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 3px; }
+
+  @media (max-width: 600px) {
+    .config-row { grid-template-columns: 1fr; }
+    .options-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <a href="professor.html" class="back-btn">←</a>
+    <div class="header-text">
+      <h1>Create Quiz</h1>
+      <p id="lectureIdDisplay">lecture / loading...</p>
+    </div>
+  </div>
+
+  <!-- Config Card -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="section-label">Quiz Settings</div>
+    <div class="config-row">
+      <div class="field-group">
+        <span class="field-label">Lecture ID</span>
+        <input type="text" id="lectureId" readonly>
+      </div>
+      <div class="field-group">
+        <span class="field-label">Duration (minutes)</span>
+        <input type="number" id="duration" placeholder="e.g. 15" min="1">
+      </div>
+      <div class="field-group">
+        <span class="field-label">Number of Questions</span>
+        <input type="number" id="totalQuestions" placeholder="e.g. 5" min="1" max="20">
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Generation Section -->
+  <div class="ai-section">
+    <div class="ai-header">
+      <div class="ai-badge">
+        <span class="dot"></span>
+        Gemini AI
+      </div>
+      <span class="ai-title">Auto-generate questions from lecture content</span>
+    </div>
+
+    <div class="field-group">
+      <textarea
+        id="transcript"
+        placeholder="Paste your lecture notes, slides content, or any text — Gemini will generate MCQ questions automatically..."
+      ></textarea>
+    </div>
+
+    <button class="btn btn-ai" onclick="generateWithAI(event)">
+      <span>✦</span>
+      <span id="aiButtonText">Generate Questions with AI</span>
+    </button>
+
+    <div class="generating-indicator" id="generatingIndicator">
+      <div class="spinner"></div>
+      <span>Gemini is reading your content and crafting questions...</span>
+    </div>
+  </div>
+
+  <!-- Questions Section -->
+  <div class="questions-header">
+    <div class="section-label" style="margin:0">Questions</div>
+    <div class="questions-count" id="questionsCount">0 questions</div>
+  </div>
+
+  <div id="questions"></div>
+
+  <div class="divider" id="addDivider">or add manually</div>
+
+  <!-- Action Buttons -->
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="addQuestion()">
+      + Add Question
+    </button>
+    <button class="btn btn-primary" onclick="saveQuiz()">
+      Save Quiz →
+    </button>
+  </div>
+
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const lectureId = params.get('lectureId') || '';
+
+document.getElementById('lectureId').value = lectureId;
+document.getElementById('lectureIdDisplay').textContent =
+  'lecture / ' + (lectureId ? lectureId.slice(-8) + '...' : 'unknown');
+
+let questionCount = 0;
+
+function updateCount() {
+  const n = document.querySelectorAll('.question-card').length;
+  document.getElementById('questionsCount').textContent =
+    n === 0 ? '0 questions' : n + (n === 1 ? ' question' : ' questions');
+}
+
+function addQuestion(data = {}) {
+  questionCount++;
+  const div = document.createElement('div');
+  div.classList.add('question-card');
+
+  div.innerHTML = `
+    <div class="question-card-header">
+      <span class="q-number">Q ${questionCount}</span>
+      <button class="q-delete" onclick="deleteQuestion(this)" title="Remove">✕</button>
+    </div>
+
+    <div class="field-group" style="margin-bottom:10px">
+      <input type="text" class="question" placeholder="Question text..."
+        value="${esc(data.question || '')}">
+    </div>
+
+    <div class="options-grid">
+      <input type="text" class="option1" placeholder="Option A" value="${esc(data.options?.[0] || '')}">
+      <input type="text" class="option2" placeholder="Option B" value="${esc(data.options?.[1] || '')}">
+      <input type="text" class="option3" placeholder="Option C" value="${esc(data.options?.[2] || '')}">
+      <input type="text" class="option4" placeholder="Option D" value="${esc(data.options?.[3] || '')}">
+    </div>
+
+    <div class="correct-row">
+      <label>✓ Correct Answer</label>
+      <input type="text" class="correct" placeholder="Paste the correct option exactly..."
+        value="${esc(data.correctAnswer || '')}">
+    </div>
+  `;
+
+  document.getElementById('questions').appendChild(div);
+  updateCount();
+}
+
+function deleteQuestion(btn) {
+  btn.closest('.question-card').remove();
+  // Re-number
+  document.querySelectorAll('.question-card').forEach((card, i) => {
+    card.querySelector('.q-number').textContent = 'Q ' + (i + 1);
+  });
+  questionCount = document.querySelectorAll('.question-card').length;
+  updateCount();
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+}
+
+async function generateWithAI(event) {
+  const transcript = document.getElementById('transcript').value.trim();
+  if (!transcript) {
+    return showToast('Please paste lecture content first.', 'warn');
+  }
+
+  const numQuestions = parseInt(document.getElementById('totalQuestions').value) || 5;
+
+  const btn = event.currentTarget;
+  const btnText = document.getElementById('aiButtonText');
+  const indicator = document.getElementById('generatingIndicator');
+
+  btn.disabled = true;
+  btnText.textContent = 'Generating...';
+  indicator.classList.add('active');
+
+  try {
+    const response = await fetch('/api/ai/generate-quiz', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: localStorage.getItem('token'),
+      },
+      body: JSON.stringify({ transcript, numQuestions }),
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      return showToast('AI generation failed: ' + data.message, 'error');
+    }
+
+    // Clear and refill
+    document.getElementById('questions').innerHTML = '';
+    questionCount = 0;
+
+    data.questions.forEach(q => addQuestion(q));
+
+    showToast(`✦ ${data.questions.length} questions generated — review before saving`, 'success');
+
+    // Scroll to questions
+    document.getElementById('questions').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (err) {
+    showToast('Something went wrong. Check console.', 'error');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Generate Questions with AI';
+    indicator.classList.remove('active');
+  }
+}
+
+async function saveQuiz() {
+  const lId = document.getElementById('lectureId').value;
+  const duration = document.getElementById('duration').value;
+  const totalQuestions = document.getElementById('totalQuestions').value;
+
+  if (!duration || !totalQuestions) {
+    return showToast('Please fill in duration and number of questions.', 'warn');
+  }
+
+  const cards = document.querySelectorAll('.question-card');
+  if (cards.length === 0) {
+    return showToast('Add at least one question before saving.', 'warn');
+  }
+
+  let questions = [];
+  cards.forEach(card => {
+    questions.push({
+      question:      card.querySelector('.question').value,
+      options: [
+        card.querySelector('.option1').value,
+        card.querySelector('.option2').value,
+        card.querySelector('.option3').value,
+        card.querySelector('.option4').value,
+      ],
+      correctAnswer: card.querySelector('.correct').value,
+    });
+  });
+
+  const response = await fetch('/api/quizzes', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: localStorage.getItem('token'),
+    },
+    body: JSON.stringify({ lectureId: lId, duration, totalQuestions, questions }),
+  });
+
+  const data = await response.json();
+  showToast(data.message, 'success');
+
+  setTimeout(() => { window.location.href = 'professor.html'; }, 1200);
+}
+
+// Toast system
+function showToast(msg, type = 'info') {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const t = document.createElement('div');
+  t.className = 'toast';
+
+  const colors = {
+    success: 'rgba(52,211,153,0.15)',
+    error:   'rgba(248,113,113,0.15)',
+    warn:    'rgba(251,191,36,0.15)',
+    info:    'rgba(139,92,246,0.15)',
+  };
+  const borders = {
+    success: 'rgba(52,211,153,0.3)',
+    error:   'rgba(248,113,113,0.3)',
+    warn:    'rgba(251,191,36,0.3)',
+    info:    'rgba(139,92,246,0.3)',
+  };
+
+  t.style.cssText = `
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+    background:${colors[type]}; border:1px solid ${borders[type]};
+    backdrop-filter:blur(20px); color:#f1f5f9;
+    padding:12px 22px; border-radius:12px;
+    font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:500;
+    z-index:9999; max-width:460px; text-align:center;
+    animation: toastIn 0.3s ease;
+  `;
+  t.textContent = msg;
+
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes toastIn {
+      from { opacity:0; transform:translateX(-50%) translateY(10px); }
+      to   { opacity:1; transform:translateX(-50%) translateY(0); }
+    }
+  `;
+  document.head.appendChild(style);
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+</script>
+
+</body>
+</html>

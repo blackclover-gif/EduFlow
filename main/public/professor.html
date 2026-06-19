@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Professor Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c14;
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --border-focus: rgba(139,92,246,0.6);
+    --accent: #7c3aed;
+    --accent2: #a78bfa;
+    --text: #f1f5f9;
+    --text-muted: rgba(241,245,249,0.45);
+    --text-dim: rgba(241,245,249,0.25);
+    --success: #34d399;
+    --danger: #f87171;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--text);
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 15% 10%, rgba(124,58,237,0.1) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 85% 80%, rgba(52,211,153,0.06) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .page { position:relative; z-index:1; max-width:1000px; margin:0 auto; padding:40px 24px 80px; }
+
+  /* Header */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+  }
+  .page-title {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #f1f5f9 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .logout-btn {
+    padding: 8px 16px;
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: 8px;
+    color: var(--danger);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .logout-btn:hover { background: rgba(248,113,113,0.18); }
+
+  /* Upload section */
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+  .upload-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 36px;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .form-grid .full { grid-column: 1 / -1; }
+  .field-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: block;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+  }
+  input::placeholder { color: var(--text-dim); }
+  input:focus, select:focus {
+    border-color: var(--border-focus);
+    background: rgba(139,92,246,0.06);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
+  }
+  select option { background: #1e1b4b; }
+
+  /* File drop zone */
+  .file-zone {
+    border: 2px dashed rgba(139,92,246,0.3);
+    border-radius: var(--radius-sm);
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(124,58,237,0.03);
+    position: relative;
+  }
+  .file-zone:hover, .file-zone.dragover {
+    border-color: rgba(139,92,246,0.6);
+    background: rgba(124,58,237,0.07);
+  }
+  .file-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+  }
+  .file-zone input[type="file"]:focus { box-shadow: none; }
+  .file-icon { font-size: 32px; margin-bottom: 10px; }
+  .file-zone-text { font-size: 14px; color: var(--text-muted); }
+  .file-zone-text span { color: var(--accent2); font-weight: 600; }
+  .file-zone-hint { font-size: 12px; color: var(--text-dim); margin-top: 6px; font-family: 'DM Mono', monospace; }
+  .file-selected {
+    font-size: 13px;
+    color: var(--success);
+    margin-top: 8px;
+    font-family: 'DM Mono', monospace;
+    display: none;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    margin-top: 16px;
+    background: linear-gradient(135deg, var(--accent), #9333ea);
+    border: 1px solid rgba(139,92,246,0.4);
+    border-radius: var(--radius-sm);
+    color: white;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.25);
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(124,58,237,0.4);
+  }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Progress bar */
+  .upload-progress {
+    display: none;
+    margin-top: 14px;
+  }
+  .upload-progress.active { display: block; }
+  .progress-bar-bg {
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #a78bfa);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s;
+  }
+  .progress-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Lectures grid */
+  .lectures-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .lectures-count {
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+  .lectures-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .lecture-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  .lecture-card:hover { border-color: rgba(255,255,255,0.14); transform: translateY(-3px); }
+  .lecture-video { width: 100%; aspect-ratio: 16/9; background: #000; display: block; }
+  .lecture-body { padding: 16px; }
+  .lecture-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  .lecture-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.5; }
+  .lecture-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .meta-tag {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+  .meta-tag.id { color: var(--accent2); border-color: rgba(167,139,250,0.2); }
+  .btn-quiz {
+    width: 100%;
+    padding: 10px;
+    background: rgba(124,58,237,0.12);
+    border: 1px solid rgba(139,92,246,0.25);
+    border-radius: 8px;
+    color: var(--accent2);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+  }
+  .btn-quiz:hover { background: rgba(124,58,237,0.22); border-color: rgba(139,92,246,0.5); }
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-dim);
+    font-size: 14px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    backdrop-filter: blur(20px);
+    color: #f1f5f9;
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 9999;
+    animation: toastIn 0.3s ease;
+  }
+  @keyframes toastIn {
+    from { opacity:0; transform:translateX(-50%) translateY(10px); }
+    to { opacity:1; transform:translateX(-50%) translateY(0); }
+  }
+
+  @media(max-width:600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .lectures-grid { grid-template-columns: 1fr; }
+    .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Professor Dashboard</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">
+        Welcome back, <span id="profName" style="color:var(--accent2);font-weight:600;"></span>
+      </div>
+    </div>
+    <div class="user-info">
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Upload Card -->
+  <div class="section-title">Upload New Lecture</div>
+  <div class="upload-card">
+    <div class="form-grid">
+      <div>
+        <label class="field-label">Lecture Title</label>
+        <input type="text" id="title" placeholder="e.g. Introduction to Algorithms">
+      </div>
+      <div>
+        <label class="field-label">Course</label>
+        <input type="text" id="course" placeholder="e.g. CS301">
+      </div>
+      <div class="full">
+        <label class="field-label">Description</label>
+        <input type="text" id="description" placeholder="Brief description of this lecture...">
+      </div>
+      <div>
+        <label class="field-label">Quiz</label>
+        <select id="hasQuiz">
+          <option value="yes">Yes — has quiz</option>
+          <option value="no">No quiz</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- File Drop Zone -->
+    <label class="field-label" style="margin-top:8px;">Video File</label>
+    <div class="file-zone" id="fileZone">
+      <input
+        type="file"
+        id="videoFile"
+        accept="video/*,.mp4,.mov,.avi,.mkv,.webm"
+        onchange="onFileSelected(this)"
+      >
+      <div class="file-icon">🎬</div>
+      <div class="file-zone-text">
+        Drop your video here or <span>browse files</span>
+      </div>
+      <div class="file-zone-hint">MP4, MOV, AVI, MKV, WEBM — up to 2GB</div>
+      <div class="file-selected" id="fileSelected"></div>
+    </div>
+
+    <div class="upload-progress" id="uploadProgress">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">Uploading...</div>
+    </div>
+
+    <button class="btn-primary" id="uploadBtn" onclick="uploadLecture()">
+      Upload Lecture
+    </button>
+  </div>
+
+  <!-- Lectures -->
+  <div class="lectures-header">
+    <div class="section-title" style="margin:0">Your Lectures</div>
+    <div class="lectures-count" id="lecturesCount">Loading...</div>
+  </div>
+  <div class="lectures-grid" id="lecturesGrid"></div>
+
+</div>
+
+<script>
+
+const API_BASE = 'http://localhost:5000';
+
+// Show name
+document.getElementById('profName').textContent =
+  localStorage.getItem('name') || 'Professor';
+
+// Drag and drop
+const fileZone = document.getElementById('fileZone');
+
+fileZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  fileZone.classList.add('dragover');
+});
+
+fileZone.addEventListener('dragleave', () => {
+  fileZone.classList.remove('dragover');
+});
+
+fileZone.addEventListener('drop', e => {
+
+  e.preventDefault();
+
+  fileZone.classList.remove('dragover');
+
+  const file = e.dataTransfer.files[0];
+
+  if(file){
+
+    document.getElementById('videoFile').files =
+      e.dataTransfer.files;
+
+    onFileSelected({
+      files: e.dataTransfer.files
+    });
+
+  }
+
+});
+
+function onFileSelected(input){
+
+  const file = input.files[0];
+
+  if(!file) return;
+
+  const mb =
+    (file.size / (1024 * 1024)).toFixed(1);
+
+  const el =
+    document.getElementById('fileSelected');
+
+  el.textContent =
+    `✓ ${file.name} (${mb} MB)`;
+
+  el.style.display = 'block';
+
+}
+
+async function uploadLecture(){
+
+  const title =
+    document.getElementById('title').value.trim();
+
+  const course =
+    document.getElementById('course').value.trim();
+
+  const description =
+    document.getElementById('description').value.trim();
+
+  const hasQuiz =
+    document.getElementById('hasQuiz').value;
+
+  const fileInput =
+    document.getElementById('videoFile');
+
+  if(!title || !course){
+
+    showToast(
+      'Title and Course required',
+      'warn'
+    );
+
+    return;
+  }
+
+  if(!fileInput.files[0]){
+
+    showToast(
+      'Please select video',
+      'warn'
+    );
+
+    return;
+  }
+
+  const formData = new FormData();
+
+  formData.append('title', title);
+  formData.append('course', course);
+  formData.append('description', description);
+  formData.append('hasQuiz', hasQuiz);
+  formData.append('video', fileInput.files[0]);
+
+  const btn =
+    document.getElementById('uploadBtn');
+
+  btn.disabled = true;
+
+  btn.textContent = 'Uploading...';
+
+  const xhr = new XMLHttpRequest();
+
+  xhr.upload.addEventListener('progress', e => {
+
+    if(e.lengthComputable){
+
+      const pct =
+        Math.round((e.loaded / e.total) * 100);
+
+      document.getElementById(
+        'progressFill'
+      ).style.width = pct + '%';
+
+      document.getElementById(
+        'progressText'
+      ).textContent =
+        `Uploading... ${pct}%`;
+
+    }
+
+  });
+
+  xhr.onload = () => {
+
+    btn.disabled = false;
+
+    btn.textContent = 'Upload Lecture';
+
+    try{
+
+      const data =
+        JSON.parse(xhr.responseText);
+
+      if(data.success){
+
+        showToast(
+          'Lecture uploaded',
+          'success'
+        );
+
+        document.getElementById('title').value = '';
+        document.getElementById('course').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('videoFile').value = '';
+
+        document.getElementById(
+          'fileSelected'
+        ).style.display = 'none';
+
+        loadLectures();
+
+      }else{
+
+        showToast(
+          data.message || 'Upload failed',
+          'error'
+        );
+
+      }
+
+    }catch(err){
+
+      console.error(err);
+
+      showToast(
+        'Server error',
+        'error'
+      );
+
+    }
+
+  };
+
+  xhr.onerror = () => {
+
+    btn.disabled = false;
+
+    btn.textContent = 'Upload Lecture';
+
+    showToast(
+      'Network error',
+      'error'
+    );
+
+  };
+
+  xhr.open(
+    'POST',
+    `${API_BASE}/api/videos/upload`
+  );
+
+  xhr.setRequestHeader(
+    'Authorization',
+    localStorage.getItem('token')
+  );
+
+  xhr.send(formData);
+
+}
+
+async function loadLectures(){
+
+  try{
+
+    const response = await fetch(
+      `${API_BASE}/api/videos`,
+      {
+        headers:{
+          Authorization:
+          `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+
+    const videos = await response.json();
+
+    const grid =
+      document.getElementById('lecturesGrid');
+
+    const count =
+      document.getElementById('lecturesCount');
+
+    count.textContent =
+      videos.length +
+      (videos.length === 1
+        ? ' lecture'
+        : ' lectures');
+
+    if(videos.length === 0){
+
+      grid.innerHTML =
+        '<div class="empty-state" style="grid-column:1/-1">No lectures uploaded yet.</div>';
+
+      return;
+    }
+
+    grid.innerHTML = '';
+
+    videos.forEach(video => {
+
+      const card =
+        document.createElement('div');
+
+      card.className = 'lecture-card';
+
+      card.innerHTML = `
+        <video class="lecture-video" controls>
+          <source src="${video.videoUrl}" type="video/mp4">
+        </video>
+
+        <div class="lecture-body">
+
+          <div class="lecture-title">
+            ${video.title}
+          </div>
+
+          <div class="lecture-desc">
+            ${video.description || 'No description'}
+          </div>
+
+          <div class="lecture-meta">
+            <span class="meta-tag">
+              ${video.course}
+            </span>
+
+            <span class="meta-tag">
+              ${video.hasQuiz ? 'Has Quiz' : 'No Quiz'}
+            </span>
+          </div>
+
+          <a href="/createQuiz.html?lectureId=${video._id}"
+             class="btn-quiz">
+             + Create Quiz
+          </a>
+
+        </div>
+      `;
+
+      grid.appendChild(card);
+
+    });
+
+  }catch(err){
+
+    console.error(err);
+
+    showToast(
+      'Failed to load lectures',
+      'error'
+    );
+
+  }
+
+}
+
+function logout(){
+
+  localStorage.clear();
+
+  window.location.href = 'index.html';
+
+}
+
+function showToast(msg,type='info'){
+
+  const old =
+    document.querySelector('.toast');
+
+  if(old) old.remove();
+
+  const t =
+    document.createElement('div');
+
+  t.className = 'toast';
+
+  t.textContent = msg;
+
+  document.body.appendChild(t);
+
+  setTimeout(()=>{
+    t.remove();
+  },3000);
+
+}
+
+loadLectures();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,388 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Quiz</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body style="background:#0f172a;">
+
+<div class="dashboard">
+
+<h1>Quiz</h1>
+
+<h2 id="timer"></h2>
+
+<div id="quizContainer"></div>
+
+<button onclick="submitQuiz()">
+Submit Quiz
+</button>
+
+</div>
+
+<script>
+
+const params =
+new URLSearchParams(
+window.location.search
+);
+
+const lectureId =
+params.get('lectureId');
+
+let quizData;
+
+// ================= TIMER =================
+
+function startPersistentTimer(
+expiresAt
+){
+
+const timer =
+document.getElementById('timer');
+
+const interval =
+setInterval(()=>{
+
+const timeLeft =
+
+new Date(expiresAt)
+-
+Date.now();
+
+if(timeLeft <= 0){
+
+clearInterval(interval);
+
+timer.innerText =
+'Time Over';
+
+submitQuiz();
+
+return;
+
+}
+
+const mins =
+Math.floor(
+timeLeft / 1000 / 60
+);
+
+const secs =
+Math.floor(
+(timeLeft / 1000) % 60
+);
+
+timer.innerText =
+
+`Time Left:
+${mins}:${
+secs < 10
+? '0'+secs
+: secs
+}`;
+
+},1000);
+
+}
+
+// ================= LOAD QUIZ =================
+
+async function loadQuiz(){
+
+try{
+
+// START QUIZ SESSION
+
+const startResponse =
+await fetch(
+
+'/api/quiz/start',
+
+{
+
+method:'POST',
+
+headers:{
+
+'Content-Type':'application/json',
+
+Authorization:
+localStorage.getItem('token'),
+
+},
+
+body:JSON.stringify({
+
+lectureId
+
+})
+
+}
+
+);
+
+const startData =
+await startResponse.json();
+
+console.log(
+'START DATA:',
+startData
+);
+
+// START TIMER
+
+if(startData.expiresAt){
+
+startPersistentTimer(
+startData.expiresAt
+);
+
+}
+
+// LOAD QUESTIONS
+
+const response =
+await fetch(
+
+`/api/quizzes/${lectureId}`,
+
+{
+
+headers:{
+Authorization:
+localStorage.getItem('token'),
+},
+
+}
+
+);
+
+quizData =
+await response.json();
+
+console.log(
+'QUIZ DATA:',
+quizData
+);
+
+// CHECK ERRORS
+
+if(!quizData.questions){
+
+alert(
+quizData.message ||
+'Quiz failed to load'
+);
+
+return;
+
+}
+
+// RENDER QUESTIONS
+
+const container =
+document.getElementById(
+'quizContainer'
+);
+
+container.innerHTML = '';
+
+quizData.questions.forEach((q,index)=>{
+
+let html = `
+
+<div class="card">
+
+<h3>
+${index+1}.
+${q.question}
+</h3>
+
+`;
+
+q.options.forEach(option=>{
+
+html += `
+
+<label>
+
+<input
+type="radio"
+name="q${index}"
+value="${option}">
+
+${option}
+
+</label>
+
+<br>
+
+`;
+
+});
+
+html += `</div>`;
+
+container.innerHTML += html;
+
+});
+
+}catch(err){
+
+console.log(err);
+
+alert(
+'Something went wrong'
+);
+
+}
+
+}
+
+// ================= STRICT ANTI CHEAT =================
+
+let tabSwitchCount = 0;
+
+document.addEventListener(
+
+'visibilitychange',
+
+()=>{
+
+if(document.hidden){
+
+tabSwitchCount++;
+
+alert(
+
+`Warning!
+
+Tab switching detected.
+
+Attempt:
+${tabSwitchCount}/3`
+
+);
+
+if(tabSwitchCount >= 3){
+
+alert(
+'Quiz auto-submitted due to multiple tab switches.'
+);
+
+submitQuiz();
+
+}
+
+}
+
+}
+
+);
+
+
+
+// ================= SUBMIT QUIZ =================
+
+async function submitQuiz(){
+
+try{
+
+let answers = [];
+
+quizData.questions.forEach((q,index)=>{
+
+const selected =
+document.querySelector(
+`input[name="q${index}"]:checked`
+);
+
+answers.push(
+selected ? selected.value : ''
+);
+
+});
+
+const response =
+await fetch(
+
+'/api/quiz/submit',
+
+{
+
+method:'POST',
+
+headers:{
+
+'Content-Type':'application/json',
+
+Authorization:
+localStorage.getItem('token'),
+
+},
+
+body:JSON.stringify({
+
+lectureId,
+answers,
+
+}),
+
+}
+
+);
+
+const data =
+await response.json();
+
+console.log(
+'SUBMIT DATA:',
+data
+);
+
+alert(
+
+`Score:
+${data.score}
+/
+${data.totalQuestions}
+
+Percentage:
+${data.percentage}%`
+
+);
+
+window.location.href =
+'student.html';
+
+}catch(err){
+
+console.log(err);
+
+alert(
+'Submission failed'
+);
+
+}
+
+}
+
+
+
+// ================= START =================
+
+loadQuiz();
+
+</script>
+
+</body>
+
+</html>
+
